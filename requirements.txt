@@ -1,0 +1,5 @@
+ultralytics
+opencv-python
+matplotlib
+
+pip install -r requiremnts.txt
