@@ -6,7 +6,7 @@ This repository contains the code for the crystal detection project, which uses 
 ---
 #Installation
 1. Clone or download the Repository:
-   git clone https://github.com/prakritisubedii/project_coyote
+   git clone https://github.com/prakritisubedii/project_coyote.git
 
 2. Install Dependencies: Ensure you have Python 3.8+ installed.
    pip install -r requirements.txt
