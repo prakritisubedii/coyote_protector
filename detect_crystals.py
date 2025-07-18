@@ -9,7 +9,7 @@ from ultralytics import YOLO
 
 MODEL_PATH = "models/best.pt"       # Path to the trained YOLO model
 IMAGE_DIR = "images"                # Folder containing images to run inference on
-PX_TO_UM = 0.5                      # Conversion factor: 1 pixel = 0.5 micron
+PX_TO_UM = 0.5                      # Conversion factor: 1 pixel = 0.5 micron (placeholder)
 NUM_IMAGES = 5                      # Number of images to process
 
 # === LOAD YOLO MODEL ===
