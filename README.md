@@ -12,6 +12,5 @@ This repository contains the code for the crystal detection project, which uses 
    pip install -r requirements.txt
 
 3. Run the script:
-
-
+   python detect_crystals.py
 
