@@ -1,7 +1,7 @@
 # Crystal Detection with YOLOv8 
 
 # Overview
-This repository contains the code for the crystal detection project, which uses a trained YOLOv8 model to detect crystals in real-time using a webcam or video input. It measures the size of the detected crystals, converts pixels to microns, and triggers an action (e.g., stopping a beam) if a crystal exceeds a defined size threshold.
+This project uses a fine-tuned YOLOv8 model to detect crystals in real-time. I started by manually labeling ~50 images using LabelMe, drawing bounding boxes around visible crystal. Later, I used the Segment Anything Model (SAM) available in LabelMe to speed up the process. I fine-tuned the auto-generated boxes by adjusting the score and IoU thresholds to make sure the labels were accurate. After creating a clean dataset, I fine-tuned a pretrained YOLOv8 model on it to improve detection accuracy. During inference, the model detects crystals, calculates their size in pixels, and converts them to microns. If a crystal is larger than a set threshold, the system can trigger a action like stopping a beam to prevent damage to the detector.
 
 # Installation 
 ### Instructions to create environment and install dependencies on S3DF:
@@ -28,24 +28,25 @@ pip install ultralytics opencv-python matplotlib
  2. cd coyote_protection
 
 
-### Dataset:
-- Image: Raw Images
-- Annotation Format: Initially json format, then exported to YOLO format for model training
-- Models: Contains the weight of the trained model
+### Dataset Preparation:
+- Data: Load images in the images/ folder
+- Labeling: (only necessary if retraining the model) 
+   - Install labelme: ``` pip install label me ```
+   - Open images in LabelMe and use the AI Prompt feature or SAM (Segment Anything Model) to segment crystals.
+   - Adjust score threshold and IOU threshold as needed.
+   - Review and manually correct bounding boxes if needed.
+   - Save annotations in ```json format``` and later convert to ```yolo format``` for model training.
+- Model Setup:
+  - Make sure you have the YOLOv8 model installed:
+    ``` pip install ultralytics ```
+  - Place the trained model weights( ```best.pt``` in the ```models/``` directory. 
 
 ### Usage:
-- Inference: Run ```detect_crystals.py``` to load the trained model and perform inference on images (currently empty).
+- Inference: Run ```detect_crystals.py``` to load the trained model and perform inference on your images.
   - This script will display the prediction made by the model with bounding box and crystal sizes in microns.
     
 
 <img width="1201" height="614" alt="Screenshot 2025-07-21 at 3 08 19 PM" src="https://github.com/user-attachments/assets/f030985e-ce8f-454a-8050-8ff9f076d446" />
 
   
-# Labeling 
-Used Labelme with the AI Mask Model (SAM-based) for assisted labeling. 
-### Steps:
-- Installed label me with ``` pip install label me ```
-- Used AI Prompt feature to segment crystals.
-- Adjusted score threshold and IOU threshold as needed.
-- Saved annotations in ```json format``` and later converted to yolo format for model training.
 
