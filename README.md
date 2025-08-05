@@ -1,10 +1,16 @@
 # Crystal Detection with YOLOv8 
 
-# Overview
-This project uses a fine-tuned YOLOv8 model to detect crystals in real-time. I started by manually labeling ~50 images using LabelMe, drawing bounding boxes around visible crystal. Later, I used the Segment Anything Model (SAM) available in LabelMe to speed up the process. I fine-tuned the auto-generated boxes by adjusting the score and IoU thresholds to make sure the labels were accurate. After creating a clean dataset, I fine-tuned a pretrained YOLOv8 model on it to improve detection accuracy. During inference, the model detects crystals, calculates their size in pixels, and converts them to microns. If a crystal is larger than a set threshold, the system can trigger a action like stopping a beam to prevent damage to the detector.
+## Overview
+This project uses a fine-tuned YOLOv8 model to detect crystals in real-time from microscopy images. It identifies crystals, calculates their size in microns, and can trigger actions if crystals exceed a certain threshold to prevent damage to the detector.
 
-# Installation 
-## 1. Create a conda environment on S3DF
+### Key Highlights:
+- Manual and AI-assisted labeling using LabelMe and Segment Anything Model (SAM)
+- Fine-tuned YOLOv8 model for accurate crystal detection
+- Pixel-to-micron size conversion and threshold alert system
+- Inference script that displays detection results with bounding boxes and size info
+
+## Installation 
+### 1. Create a conda environment on S3DF
 ``` bash
 1. ssh yourusername@s3dflogin.slac.stanford.edu
 2. mkdir -p ~/miniconda3
@@ -18,7 +24,7 @@ Add to ```.bashrc ```:
 }
 init_conda  # ← Run this command whenever using the environment
 ```
-## 2. Set up the environment
+### 2. Set up the environment
 ``` bash 
 7. conda create --name name_of_your_env python=3.10
 8. conda activate your_env_name
@@ -27,7 +33,7 @@ init_conda  # ← Run this command whenever using the environment
 pip install ultralytics opencv-python matplotlib
  ```
 
-## Clone or download the Repository:
+### Clone or download the Repository:
 ``` bash
 git clone https://github.com/prakritisubedii/coyote_protector.git
 cd coyote_protector
@@ -43,23 +49,19 @@ cd coyote_protector
      ``` bash
      labelme path/to/images/
      ```  
-      - Manually Label or Use the AI tools in LabelMe
-      - Click AI Prompt or use SAM (Segment Anything Model)
-      - Adjust score threshold and IOU threshold for better bounding boxes.
-      - Save annotations in ```.json``` format
+      - Manually draw bounding boxes or use the AI Prompt or SAM tools in LabelMe
+      - Adjust score and IoU thresholds for better results
+      - Save the annotations in .json format
     - Transfer your labeled dataset to S3DF:
       ``` bash
       scp -r /path/to/labeled_dataset username@s3dflogin.slac.stanford.edu:/path/to/project
       ```
 
-## Convert JSON to YOLO Format (on S3DF)
-Use Ultralytics' CLI tool to convert annotations:
+### Convert JSON to YOLO Format (on S3DF)
+Use Ultralytics' CLI:
 ``` bash
    yolo convert model=labelme location=datasets/labels_json/ output=datasets/labels/ format=yolo
 ```
-Simple Manual Split:
-- Move ~80% of your images and labels into train/
-- Move the remaining ~20% into val/
 
 Before training, your dataset must be organized into a YOLO-compatible folder structure:
 ``` bash
@@ -67,18 +69,42 @@ Before training, your dataset must be organized into a YOLO-compatible folder st
 │   ├── train/        ← training images
 │   └── val/          ← validation images
 ├── labels/
-│   ├── train/        ← YOLO-format .txt files for train images
-│   └── val/          ← YOLO-format .txt files for val images
+│   ├── train/        ← Corresponding .txt label files
+│   └── val/          
 ```
-## Training the Model
+Simple Manual Split:
+- Move ~80% of your images and labels into train/
+- Move the remaining ~20% into val/
+  
+### Training the Model
 1. Create ``` dataset.yaml```
+``` bash
+path: ./datasets
 
-  - Make sure you have the YOLOv8 model installed:
-    ``` pip install ultralytics ```
-  - Place the trained model weights( ```best.pt``` in the ```models/``` directory. 
+train: images/train
+val: images/val
 
-### Usage:
-- Inference: Run ```detect_crystals.py``` to load the trained model and perform inference on your images.
+nc: 1
+names: ["crystals"]
+```
+2. Train the Model
+```
+pip install ultralytics
+model = YOLO('yolov8n.pt')
+
+model.train(
+    data="path/to/yolo_dataset.yaml",
+    epochs=50,
+    imgsz=640
+)
+```
+- Trained weights will be saved in :``` runs/detect/train/weight/best.pt ```
+Move it to the ```models/``` folder:
+``` mv runs/detect/train/weights/best.pt models/ ```
+
+
+### Running Inference
+- Run ```python detect_crystals.py``` to load the trained model and perform inference on your images.
   - This script will display the prediction made by the model with bounding box and crystal sizes in microns.
     
 
