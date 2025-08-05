@@ -12,23 +12,23 @@ This project uses a fine-tuned YOLOv8 model to detect crystals in real-time from
 ## Installation 
 ### 1. Create a conda environment on S3DF
 ``` bash
-1. ssh yourusername@s3dflogin.slac.stanford.edu
-2. mkdir -p ~/miniconda3
-3. wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
-4. bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+ssh yourusername@s3dflogin.slac.stanford.edu
+mkdir -p ~/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
 ```
 Add to ```.bashrc ```:
  ``` bash
-5. init_conda () {
+init_conda () {
     source ~/miniconda3/etc/profile.d/conda.sh
 }
 init_conda  # ← Run this command whenever using the environment
 ```
 ### 2. Set up the environment
 ``` bash 
-7. conda create --name name_of_your_env python=3.10
-8. conda activate your_env_name
-9. conda install pytorch torchvision torchaudio cudatoolkit=12.2 -c pytorch
+conda create --name name_of_your_env python=3.10
+conda activate your_env_name
+conda install pytorch torchvision torchaudio cudatoolkit=12.2 -c pytorch
 
 pip install ultralytics opencv-python matplotlib
  ```
