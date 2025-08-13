@@ -40,7 +40,7 @@ cd coyote_protector
 ```
 
 ### Dataset Preparation:
-1. Label Images (if retraining the model)
+Label Images (if retraining the model)
    - Install Labelme locally:
      ``` bash
      pip install labelme
@@ -57,12 +57,6 @@ cd coyote_protector
       scp -r /path/to/labeled_dataset username@s3dflogin.slac.stanford.edu:/path/to/project
       ```
 
-### Convert JSON to YOLO Format (on S3DF)
-Use Ultralytics' CLI:
-``` bash
-   yolo convert model=labelme location=datasets/labels_json/ output=datasets/labels/ format=yolo
-```
-
 Before training, your dataset must be organized into a YOLO-compatible folder structure:
 ``` bash
 ├── images/
@@ -72,22 +66,30 @@ Before training, your dataset must be organized into a YOLO-compatible folder st
 │   ├── train/        ← Corresponding .txt label files
 │   └── val/          
 ```
-Simple Manual Split:
-- Move ~80% of your images and labels into train/
-- Move the remaining ~20% into val/
-  
-### Training the Model
-1. Create ``` dataset.yaml```
+
+Preparing Dataset:
+- Open ```prepare_dataset.py``` and edit:
 ``` bash
-path: ./datasets
-
-train: images/train
-val: images/val
-
-nc: 1
-names: ["crystals"]
+coco_json_path   = 'path/to/your/dataset_fixed.json'  # COCO JSON annotations
+chip_pic_dir     = 'path/to/your/chip_pic'            # Folder with original images
+images_train_dir = 'path/to/your/yolo_dataset/images/train'
+images_val_dir   = 'path/to/your/yolo_dataset/images/val'
+labels_train_dir = 'path/to/your/yolo_dataset/labels/train'
+labels_val_dir   = 'path/to/your/yolo_dataset/labels/val'
+yaml_path        = 'path/to/your/yolo_dataset/yolo_dataset.yaml'
 ```
-2. Train the Model
+- Run the script:
+ ``` python prepare_dataset.py ```
+
+- The script will:
+  - Convert COCO annotations to YOLO format
+  - Convert images to grayscale (3-channel)
+  - Split into train and val sets
+  - Create a dataset.yaml file for YOLO training
+
+### Training 
+Train the model using following:
+
 ```
 pip install ultralytics
 model = YOLO('yolov8n.pt')
@@ -99,15 +101,22 @@ model.train(
 )
 ```
 - Trained weights will be saved in :``` runs/detect/train/weight/best.pt ```
-Move it to the ```models/``` folder:
-``` mv runs/detect/train/weights/best.pt models/ ```
 
 
 ### Running Inference
-- Run ```python detect_crystals.py``` to load the trained model and perform inference on your images.
-  - This script will display the prediction made by the model with bounding box and crystal sizes in microns.
-    
 
+Once you have trained a model and have your `best.pt` weights:
+
+1. Open `run_inference.py` and edit:
+   - `weights_path` → path to your trained `.pt`
+   - `chip_pic_dir` → folder containing test images
+   - `px_to_um` → your pixel-to-micron conversion factor
+
+2. Run:
+   ```bash
+   python run_inference.py
+   ```
+   
 <img width="1201" height="614" alt="Screenshot 2025-07-21 at 3 08 19 PM" src="https://github.com/user-attachments/assets/f030985e-ce8f-454a-8050-8ff9f076d446" />
 
   
