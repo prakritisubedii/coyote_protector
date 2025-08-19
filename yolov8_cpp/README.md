@@ -13,6 +13,38 @@ yolov8_cpp/
 └── requirements.txt          ← List of required dependencies
 ```
 
+### Labels Format 
+- One ```.txt``` file per image, same stem (e.g. ```img001.png``` → ```img001.txt```)
+- YOLO format:
+``` bash
+class_id cx cy w h
+```
+### Model Export 
+Export your YOLO PyTorch weights to ONNX with Ultralytics:
+``` bash
+from ultralytics import YOLO
+
+model = YOLO('runs/detect/train/weights/best.pt')
+
+# Export to ONNX
+model.export(
+    format='onnx',
+    imgsz=640,          # Input image size
+    optimize=True,      # Optimize for inference
+    half=False,         # Use FP32 (set True for FP16 if supported)
+    dynamic=False,      # Static input shapes (faster)
+    simplify=True       # Simplify the model
+)
+```
+By default, the exported model will be saved under:
+``` bash
+runs/export/weights/best.onnx
+```
+Move or copy it into your C++ project folder:
+``` bash
+cp runs/export/weights/best.onnx /path/to/yolov8_cpp/best.onnx
+```
+
 ### Prerequisites
 Make sure your system has:
 - g++ ≥ 7.0 (C++17)
@@ -21,7 +53,7 @@ Make sure your system has:
 ## Installation
 
 ### 1. Install ONNX Runtime
-```
+``` bash 
 cd /path/to/yolov8_cpp 
 wget https://github.com/microsoft/onnxruntime/releases/download/v1.17.0/onnxruntime-linux-x64-1.17.0.tgz
 tar xzf onnxruntime-linux-x64-1.17.0.tgz
@@ -106,11 +138,24 @@ After building, run inference like this:
 - Argument 3 = labels folder (optional, used for metrics)
 - Argument 4 = output folder (results will be written here)
 
-### Output
-The program will create:
-- `<image>_vis.jpg` in the output folder with bounding boxes
-- `detections.csv` with all detections
-- `metrics.csv` and `summary.txt` if labels are provided (precision/recall, mAP, etc)
+### How ```main.cpp``` works:
+
+The program does the following:
+1. **Preprocessing** – converts each image to RGB, resizes to 640×640 with letterbox, normalizes to `[0,1]`.  
+2. **Inference** – runs YOLOv8 ONNX model with ONNX Runtime.  
+3. **Postprocessing** – filters predictions by confidence/IoU, rescales boxes back to the original image, applies NMS if needed.  
+4. **Saving Results** – always writes:  
+   - `summary.csv` → detections per image (boxes, scores, size estimates, inference time,etc.)  
+   - `metrics.csv` → precision, recall, F1, average IoU, AP@0.50, average inference time 
+5. **Visualization (optional)** – set `SAVE_VIS = true` in `main.cpp` to save `<image>_vis.jpg` with bounding boxes.  
+6. **Accuracy (optional)** – if labels are present, metrics are computed against them; if not, detections are still saved.  
+
+All thresholds, pixel-to-micron factor, and flags are defined at the top of `main.cpp`.
+
+## Output Files
+- `summary.csv` – per-image detections  
+- `metrics.csv` – overall run metrics  
+- `<image>_vis.jpg` – bounding box visualizations 
 
 ## Examples
 <img width="1301" height="484" alt="Screenshot 2025-08-17 at 6 33 47 PM" src="https://github.com/user-attachments/assets/b033b083-db51-48b7-acda-2afd8dd44227" />
