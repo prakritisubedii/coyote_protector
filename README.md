@@ -90,7 +90,7 @@ yaml_path        = 'path/to/your/yolo_dataset/yolo_dataset.yaml'
 ### Training 
 Train the model using following:
 
-```
+``` bash
 pip install ultralytics
 model = YOLO('yolov8n.pt')
 
