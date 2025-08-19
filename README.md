@@ -125,4 +125,7 @@ Once you have trained a model and have your `best.pt` weights:
 <img width="1201" height="614" alt="Screenshot 2025-07-21 at 3 08 19 PM" src="https://github.com/user-attachments/assets/f030985e-ce8f-454a-8050-8ff9f076d446" />
 
   
+## C++ Inference with ONNX Runtime  
+
+This repository also includes a C++ implementation (`yolov8_cpp/`) that runs YOLOv8 with ONNX Runtime and OpenCV. See the [yolov8_cpp/README.md] for build and usage instructions.  
 
