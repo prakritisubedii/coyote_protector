@@ -1,7 +1,10 @@
 # Crystal Detection with YOLOv8 
 
-## Overview
-This project uses a fine-tuned YOLOv8 model to detect crystals in real-time from microscopy images. It identifies crystals, calculates their size in microns, and can trigger actions if crystals exceed a certain threshold to prevent damage to the detector.
+## Concept
+Crystallography detectors are highly sensitive, and large crystals can cause serious damage if they are not identified in time.  
+To address this, we developed an AI system using YOLOv8 that analyzes microscopy images and automatically detects crystals.  
+The model generates bounding boxes around each crystal, and the dimensions of these boxes (in pixels) are converted to microns using a calibration factor (`px_to_um`) to estimate crystal size.  
+By applying a threshold to these size estimates, the system can flag oversized crystals early and help protect detector systems.
 
 ### Key Highlights:
 - Manual and AI-assisted labeling using LabelMe and Segment Anything Model (SAM)
@@ -116,7 +119,9 @@ Once you have trained a model and have your `best.pt` weights:
    ```bash
    python run_inference.py
    ```
-   
+
+### Example
+
 <img width="1201" height="614" alt="Screenshot 2025-07-21 at 3 08 19 PM" src="https://github.com/user-attachments/assets/f030985e-ce8f-454a-8050-8ff9f076d446" />
 
   
