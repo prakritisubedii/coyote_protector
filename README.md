@@ -1,10 +1,7 @@
 # Crystal Detection with YOLOv8 
 
 ## Concept
-Crystallography detectors are highly sensitive, and large crystals can cause serious damage if they are not identified in time.  
-To address this, we developed an AI system using YOLOv8 that analyzes microscopy images and automatically detects crystals.  
-The model generates bounding boxes around each crystal, and the dimensions of these boxes (in pixels) are converted to microns using a calibration factor (`px_to_um`) to estimate crystal size.  
-By applying a threshold to these size estimates, the system can flag oversized crystals early and help protect detector systems.
+Crystallography detectors are highly sensitive, and large crystals can cause serious damage if they are not identified in time. To address this, we developed an AI system using YOLOv8 that analyzes microscopy images and automatically detects crystals. The model generates bounding boxes around each crystal, and the dimensions of these boxes (in pixels) are converted to microns using a calibration factor (`px_to_um`) to estimate crystal size. By applying a threshold to these size estimates, the system can flag oversized crystals early and help protect detector systems.
 
 ### Key Highlights:
 - Manual and AI-assisted labeling using LabelMe and Segment Anything Model (SAM)
@@ -90,21 +87,17 @@ yaml_path        = 'path/to/your/yolo_dataset/yolo_dataset.yaml'
   - Split into train and val sets
   - Create a dataset.yaml file for YOLO training
 
-### Training 
-Train the model using following:
-
-``` bash
-pip install ultralytics
-model = YOLO('yolov8n.pt')
-
-model.train(
-    data="path/to/yolo_dataset.yaml",
-    epochs=50,
-    imgsz=640
-)
+### Run Training
+ ``` bash
+python training.py
 ```
-- Trained weights will be saved in :``` runs/detect/train/weight/best.pt ```
 
+Trained weights will be saved to:
+``` runs/detect/train/weights/best.pt ```
+
+On every run the weights will saved as (```train2/```, ```train3/```, etc.)
+
+- You can also select different YOLOv8 models (n/s/m/l/x) and tune parameters like imgsz, epochs, batch, lr0, optimizer, and data augmentations to trade off speed vs accuracy.
 
 ### Running Inference
 
@@ -119,6 +112,20 @@ Once you have trained a model and have your `best.pt` weights:
    ```bash
    python run_inference.py
    ```
+
+### Model Evaluation
+After training your YOLOv8 model, you can evaluate its performance using standard object detection metrics:
+- Open eval_accuracy.py and edit:
+  - weights_path → path to your trained .pt file
+  - data_yaml → path to your dataset YAML file
+- Run:
+``` bash
+python eval_accuracy.py
+```
+The script will calculate and display:
+- Precision: Percentage of correct positive predictions
+- Recall: Percentage of actual positives correctly identified
+- mAP@0.5: Mean Average Precision at IoU threshold of 0.5
 
 ### Example
 
