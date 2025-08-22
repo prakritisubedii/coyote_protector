@@ -7,5 +7,6 @@ model = YOLO('yolov8n.pt')
 model.train(
     data="/path/to/yolo_dataset/yolo_dataset.yaml",
     epochs=50,
-    imgsz=640
+    imgsz=640,
+    batch=16,
 )
