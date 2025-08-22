@@ -19,5 +19,9 @@ set(OpenCV_DIR "/sdf/home/p/prakriti/prjlumine22/results/prakriti/yolov8_cpp/ope
 find_package(OpenCV REQUIRED)
 
 add_executable(yolov8_cpp main.cpp)
+
 target_include_directories(yolov8_cpp PRIVATE ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(yolov8_cpp PRIVATE ${OpenCV_LIBS} onnxruntime)
+
+find_package(Threads REQUIRED)
+target_link_libraries(yolov8_cpp PRIVATE ${OpenCV_LIBS} onnxruntime Threads::Threads)
