@@ -18,6 +18,9 @@
 #include <sys/types.h>
 #include <vector>
 #include <ctime>
+#include <thread>
+#include <opencv2/dnn.hpp>
+
 
 // ---------- Config ----------
 static constexpr int   INPUT_W    = 640;
@@ -241,79 +244,102 @@ int main(int argc, char* argv[]){
 
     // ONNX Runtime
     Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "YOLOv8");
-    Ort::SessionOptions so; so.SetIntraOpNumThreads(1);
+    Ort::SessionOptions so;
+    so.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+    so.SetIntraOpNumThreads(std::thread::hardware_concurrency());
+    so.SetInterOpNumThreads(1);   
+    so.SetExecutionMode(ExecutionMode::ORT_PARALLEL);
     Ort::Session session(env, model_path.c_str(), so);
     Ort::AllocatorWithDefaultOptions alloc;
 
     // IO names
     std::vector<std::string> input_names, output_names;
-    for(size_t i=0;i<session.GetInputCount();++i){
+    for (size_t i=0; i<session.GetInputCount(); ++i) {
         Ort::AllocatedStringPtr n = session.GetInputNameAllocated(i, alloc);
         input_names.emplace_back(n.get());
     }
-    for(size_t i=0;i<session.GetOutputCount();++i){
+    for (size_t i=0; i<session.GetOutputCount(); ++i) {
         Ort::AllocatedStringPtr n = session.GetOutputNameAllocated(i, alloc);
         output_names.emplace_back(n.get());
     }
     std::vector<const char*> in_ptrs, out_ptrs;
-    for(auto& s: input_names)  in_ptrs.push_back(s.c_str());
-    for(auto& s: output_names) out_ptrs.push_back(s.c_str());
+    for (auto& s : input_names)  in_ptrs.push_back(s.c_str());
+    for (auto& s : output_names) out_ptrs.push_back(s.c_str());
 
     // Images
     auto imgs = list_images(images_dir, 100000);
-    if(imgs.empty()){
-        std::cerr<<"No images found in: "<<images_dir<<"\n";
+    if (imgs.empty()) {
+        std::cerr << "No images found in: " << images_dir << "\n";
         return 1;
     }
 
     // CSV (detections + per-box info)
     const std::string csv_path = join_path(out_dir, "summary.csv");
     std::ofstream csv(csv_path.c_str());
-    if(!csv){
-        std::cerr<<"Failed to open CSV for writing: "<<csv_path<<"\n";
+    if (!csv) {
+        std::cerr << "Failed to open CSV for writing: " << csv_path << "\n";
         return 1;
     }
     csv << "filename,idx,class_id,score,x,y,w,h,longest_px,longest_um,infer_ms\n";
-
+    
     // Global metrics
     long total_gt_boxes = 0;
     std::vector<float> pr_scores_all; // AP buffers
     std::vector<int>   pr_tp_all;
 
-    long TP=0, FP=0, FN=0;
+    long TP = 0, FP = 0, FN = 0;
     double sumIoU_TP = 0.0;
 
     std::vector<double> times_ms;
     times_ms.reserve(imgs.size());
     bool model_single_class = false; // toggled if we detect class-agnostic outputs
 
-    for(const std::string& img_path : imgs){
+    // ⬇️ Allocate once (not per loop)
+    Ort::MemoryInfo mem = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+    std::vector<int64_t> ishape{1, 3, INPUT_H, INPUT_W};
+
+    // Process images
+    for (const std::string& img_path : imgs) {
         cv::Mat img_raw = cv::imread(img_path, cv::IMREAD_UNCHANGED);
-        if(img_raw.empty()){
-            std::cerr<<"Failed to read: "<<img_path<<"\n";
+        if (img_raw.empty()) {
+            std::cerr << "Failed to read: " << img_path << "\n";
             continue;
         }
 
         cv::Mat img;
-        if(img_raw.channels()==1) cv::cvtColor(img_raw, img, cv::COLOR_GRAY2BGR);
-        else                      img = img_raw;
-
+        if (img_raw.channels() == 1) 
+            cv::cvtColor(img_raw, img, cv::COLOR_GRAY2BGR);  // grayscale → BGR
+        else 
+            img = img_raw;
+            
         // Letterbox preprocess
         cv::Mat rgb640;
         LetterboxInfo L = letterbox_bgr_to_rgb_640(img, rgb640);
-        rgb640.convertTo(rgb640, CV_32F, 1.f/255.f);
 
-        // HWC -> CHW float array
-        std::vector<float> in_vals; in_vals.reserve(1*3*INPUT_H*INPUT_W);
-        for(int c=0;c<3;++c)
-            for(int y=0;y<INPUT_H;++y)
-                for(int x=0;x<INPUT_W;++x)
-                    in_vals.push_back(rgb640.at<cv::Vec3f>(y,x)[c]);
+        // Fast path: do /255 and HWC->CHW in one go
+        static std::vector<float> in_vals; // reuse
+        cv::Mat blob = cv::dnn::blobFromImage(
+            rgb640,
+            1.0/255.0,                 // normalize here
+            cv::Size(INPUT_W, INPUT_H),
+            cv::Scalar(),
+            /*swapRB=*/false,          // already RGB
+            /*crop=*/false
+        );
+        // IMPORTANT: keep 'blob' alive until Run() returns
+        Ort::Value in_tensor = Ort::Value::CreateTensor<float>(
+            mem,
+            reinterpret_cast<float*>(blob.data),
+            static_cast<size_t>(blob.total()),  // number of floats
+            ishape.data(), ishape.size()
+        );
+        // in_vals.assign((float*)blob.datastart, (float*)blob.dataend);
+    
 
-        std::vector<int64_t> ishape{1,3,INPUT_H,INPUT_W};
-        Ort::MemoryInfo mem = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
-        Ort::Value in_tensor = Ort::Value::CreateTensor<float>(mem, in_vals.data(), in_vals.size(),
-                                                               ishape.data(), ishape.size());
+        // std::vector<int64_t> ishape{1,3,INPUT_H,INPUT_W};
+        // Ort::MemoryInfo mem = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+        // Ort::Value in_tensor = Ort::Value::CreateTensor<float>(mem, in_vals.data(), in_vals.size(),
+        //                                                        ishape.data(), ishape.size());
 
         // Run inference (use first output)
         auto t0 = std::chrono::high_resolution_clock::now();
