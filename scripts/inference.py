@@ -1,7 +1,7 @@
 """
 YOLOv8 Inference Script → CSV (sizes) + YOLO-rendered images
 ------------------------------------------------------------
-- Uses YOLO's own annotated images (save=True). No matplotlib.
+- Uses YOLO's own annotated images (save=True).
 - Computes longest side per detection in px and μm.
 - If size > alert_um (default 100 μm), prints "Stop the beam" and marks it in CSV.
 
