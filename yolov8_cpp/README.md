@@ -119,7 +119,7 @@ cmake \
   -DONNXRUNTIME_DIR=${PWD}/../onnxruntime-linux-x64-1.17.0 \
   ..
 
-make -j
+make -j8
 ```
 - You only need to run this when setting up the project for the first time, or whenever you change the code or ```CMakeLists.txt```.
 - If you only want to re-run detection on new images, skip these steps and go straight to running the binary.
@@ -165,3 +165,10 @@ All thresholds, pixel-to-micron factor, and flags are defined at the top of `mai
 
 <img width="1071" height="395" alt="Screenshot 2025-08-17 at 6 39 42 PM" src="https://github.com/user-attachments/assets/c0208d70-71bc-4ba4-8db5-dd3fccc7509b" />
 
+
+
+### Accuracy Measurement for 50 image
+
+| Precision | Recall   | F1 Score | Avg Inference Time |
+|-----------|----------|----------|---------------------|
+| 0.950980  | 0.734848 | 0.829060 | 70 ms              |
